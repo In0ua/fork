@@ -124,7 +124,7 @@ $('form').onsubmit=function(e){
   var name=$('who').value.trim(), why=$('why').value.trim();
   var text=name+' выбрала '+ME_ACC+' за:\n\n'+why;
   function done(){
-    $('thanks').textContent='Спасибо, '+name+'. Теперь официально. — '+ME;
+    $('thanks').textContent='Спасибо, '+name+'. Теперь официально ты двушка. — '+ME;
     show('s4'); for(var i=0;i<60;i++)spawn(true,cv.width/2,cv.height/2);
   }
   function viaMail(){
