@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Моей жопашке</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#120c09;--bg2:#24160f;--caramel:#e0a862;--deep:#b8752f;--milk:#f3dcb8;--ink:#2a1a10;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--caramel);font-family:'Pixelify Sans','Courier New',monospace;
+font-size:1.4rem;line-height:1.45;overflow-x:hidden;transition:background 1.5s}
+body.warm{background:linear-gradient(180deg,var(--bg2),var(--bg))}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;image-rendering:pixelated}
+main{position:relative;z-index:1;min-height:100%;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.scene{display:none;text-align:center;max-width:36rem;width:100%}
+.scene.on{display:block}
+h1,h2{font-weight:700;margin:0 0 1.2rem;color:var(--caramel);text-shadow:3px 3px 0 #000}
+h1{font-size:clamp(2.4rem,10vw,4rem);line-height:1.15}
+h2{font-size:clamp(1.7rem,6.5vw,2.4rem);line-height:1.3}
+p{margin:.6rem 0 1.4rem;color:var(--milk)}
+.name{font-size:1.7rem;color:var(--milk);margin-bottom:2rem;letter-spacing:.05em}
+.mc{display:inline-block;cursor:pointer;font:inherit;font-weight:700;font-size:1.3rem;line-height:1.3;color:#fff;padding:.8em 1.3em;max-width:100%;
+background:#7a6a5c;border:4px solid;border-color:#c9b9a8 #2b211a #2b211a #c9b9a8;outline:3px solid #000;text-shadow:2px 2px 0 #2b211a}
+.mc:hover,.mc:focus-visible{background:#8f7c6a;outline-color:var(--caramel)}
+.mc:active{border-color:#2b211a #c9b9a8 #c9b9a8 #2b211a}
+#yes{background:var(--deep);border-color:#f0c48a #6b3f14 #6b3f14 #f0c48a;font-size:1.3rem}
+#yes:hover{background:#cc8a3f}
+#no{background:#5a4a40}
+#no.run{position:fixed;z-index:5}
+.row{display:flex;gap:1.4rem;justify-content:center;align-items:center;flex-wrap:wrap;min-height:6rem}
+form{background:var(--milk);color:var(--ink);text-align:left;padding:1.5rem;border:4px solid #000;box-shadow:6px 6px 0 var(--deep)}
+form h3{font-size:1.5rem;margin:0 0 .6rem;text-align:center}
+label{display:block;font-weight:700;font-size:1.25rem;margin:1rem 0 .3rem}
+input,textarea{width:100%;font:inherit;font-size:1.25rem;padding:.6rem;border:3px solid var(--ink);background:#fffaf0;color:var(--ink);border-radius:0}
+textarea{min-height:8rem;resize:vertical}
+form .mc{display:block;width:100%;margin-top:1.4rem}
+.date{margin-top:1rem;font-size:1rem;color:#7a5a3a}
+@media (prefers-reduced-motion:reduce){canvas{display:none}}
+</style>
+</head>
+<body>
+<canvas id="fx" aria-hidden="true"></canvas>
+<main>
+
+<div class="scene on" id="s1">
+  <h1>Моей жопашке</h1>
+  <div class="name" id="hername"></div>
+  <button class="mc" id="open">Можно кое-что у тебя спросить?</button>
+</div>
+
+<div class="scene" id="s2">
+  <h2>Ты мне сильно нравишься, и мне хотелось бы узнать: хочешь ли ты быть моей девушкой?</h2>
+  <div class="row" id="row">
+    <button class="mc" id="yes">Да</button>
+    <button class="mc" id="no">Нет</button>
+  </div>
+</div>
+
+<div class="scene" id="s3">
+  <h1>Ураа!</h1>
+  <p>Тогда одна формальность. Заполни, пожалуйста, бланк.</p>
+  <form id="form">
+    <h3>БЛАНК</h3>
+    <label for="who">Я,</label>
+    <input id="who" required autocomplete="off" placeholder="напиши своё имя">
+    <label for="why">выбрала <span id="acc"></span> за</label>
+    <textarea id="why" required placeholder="напиши, за что…"></textarea>
+    <div class="date" id="date"></div>
+    <div class="date" id="status" style="color:#a02020"></div>
+    <button class="mc" type="submit" id="send">Отправить</button>
+  </form>
+</div>
+
+<div class="scene" id="s4">
+  <h1>Принято!</h1>
+  <p id="thanks"></p>
+</div>
+
+</main>
+<script>
+/* ====== ПОМЕНЯЙ ЭТО ====== */
+var HER = "Камилла";
+var ME = "Жигер";
+var ME_ACC = "Жигера";          // твоё имя в винительном падеже: «выбрала Жигера»
+var EMAIL = "zhangirmurat51@gmail.com";   // сюда приходит бланк
+var WEB3KEY = "";   // ключ с web3forms.com (надёжнее). Если пусто, используется FormSubmit
+/* ======================== */
+
+var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $ = function(id){return document.getElementById(id)};
+$('hername').textContent = HER;
+$('acc').textContent = ME_ACC;
+$('date').textContent = 'Дата: ' + new Date().toLocaleDateString('ru-RU');
+function show(id){document.querySelectorAll('.scene').forEach(function(s){s.classList.toggle('on',s.id===id)})}
+
+var started = false;
+$('open').onclick = function(){started = true; document.body.classList.add('warm'); show('s2')};
+
+// «Нет» убегает, «Да» растёт
+var yes=$('yes'), no=$('no'), n=0;
+function dodge(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  n++;
+  no.classList.add('run');
+  var w=innerWidth-no.offsetWidth-20, h=innerHeight-no.offsetHeight-20;
+  no.style.left=Math.max(10,Math.random()*w)+'px';
+  no.style.top=Math.max(10,Math.random()*h)+'px';
+  yes.style.fontSize=Math.min(1.3+n*.9,9)+'rem';
+}
+no.addEventListener('mouseenter',dodge);
+no.addEventListener('touchstart',dodge,{passive:false});
+no.addEventListener('click',dodge);
+
+yes.onclick=function(){
+  show('s3');
+  for(var i=0;i<80;i++)spawn(true,cv.width/2,cv.height/2);
+};
+
+// бланк -> почта
+$('form').onsubmit=function(e){
+  e.preventDefault();
+  var name=$('who').value.trim(), why=$('why').value.trim();
+  var text=name+' выбрала '+ME_ACC+' за:\n\n'+why;
+  function done(){
+    $('thanks').textContent='Спасибо, '+name+'. Теперь официально. — '+ME;
+    show('s4'); for(var i=0;i<60;i++)spawn(true,cv.width/2,cv.height/2);
+  }
+  function viaMail(){
+    location.href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Бланк от '+name)+'&body='+encodeURIComponent(text);
+    done();
+  }
+  var btn=$('send'), st=$('status');
+  if(btn.dataset.mail){viaMail();return}
+  btn.textContent='Отправляю…'; st.textContent='';
+  function fail(msg){
+    st.textContent='Автоотправка не сработала ('+msg+'). Нажми кнопку ещё раз, чтобы отправить через почту.';
+    btn.textContent='Отправить через почту'; btn.dataset.mail='1';
+  }
+  var url,payload;
+  if(WEB3KEY){url='https://api.web3forms.com/submit';payload={access_key:WEB3KEY,subject:'Бланк от '+name,from_name:name,message:text}}
+  else{url='https://formsubmit.co/ajax/'+encodeURIComponent(EMAIL);payload={_subject:'Blank ot '+name,_captcha:'false',_template:'table',name:name,answer:why}}
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+   .then(function(r){return r.json().catch(function(){return {success:'false',message:'HTTP '+r.status}})})
+   .then(function(j){(j.success==='true'||j.success===true)?done():fail(j.message||'нет ответа')})
+   .catch(function(e){fail(e&&e.message?e.message:'сеть')});
+};
+
+// пиксельные сердечки как в майнкрафте (появляются после первого нажатия)
+var MAP=[[0,1,1,1,0,1,1,1,0],[1,3,2,2,1,2,2,2,1],[1,3,2,2,2,2,2,2,1],[1,2,2,2,2,2,2,2,1],
+         [0,1,2,2,2,2,2,1,0],[0,0,1,2,2,2,1,0,0],[0,0,0,1,2,1,0,0,0],[0,0,0,0,1,0,0,0,0]];
+var PAL=[[null,'#2a0a0a','#a82a2a','#e08a7a'],[null,'#3a1c08','#d99a4e','#f6d9a6']];
+var sprites=PAL.map(function(p){
+  var c=document.createElement('canvas');c.width=9;c.height=8;var x=c.getContext('2d');
+  MAP.forEach(function(r,y){r.forEach(function(v,i){if(v){x.fillStyle=p[v];x.fillRect(i,y,1,1)}})});
+  return c;
+});
+var cv=$('fx'), cx=cv.getContext('2d'), hearts=[], dpr=Math.max(1,Math.round(devicePixelRatio||1));
+function size(){cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;cx.imageSmoothingEnabled=false}
+size(); addEventListener('resize',size);
+function spawn(burst,x,y){
+  var k=(2+Math.floor(Math.random()*4))*dpr;
+  hearts.push({x:x!=null?x:Math.random()*cv.width,y:y!=null?y:cv.height+40,k:k,spr:sprites[Math.random()<.5?0:1],
+    vy:-(.4+Math.random()*.9)*dpr*(burst?4:1),vx:(Math.random()-.5)*(burst?9:.8)*dpr,a:burst?1:.3+Math.random()*.5});
+}
+function draw(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  if(started&&!reduce&&Math.random()<.07&&hearts.length<60)spawn();
+  hearts=hearts.filter(function(p){return p.y>-80&&p.a>.02});
+  hearts.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy; if(p.a>.5&&Math.abs(p.vy)>2*dpr)p.a-=.012;
+    cx.globalAlpha=p.a;cx.drawImage(p.spr,Math.round(p.x),Math.round(p.y),9*p.k,8*p.k);
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
